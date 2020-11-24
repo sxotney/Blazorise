@@ -67,7 +67,11 @@ namespace Blazorise.Components
 
             //If input field is empty, clear current SelectedValue.
             if ( string.IsNullOrEmpty( text ) )
+            {
                 await Clear();
+
+                FilterData();
+            }
 
             await SearchChanged.InvokeAsync( CurrentSearch );
         }
@@ -87,11 +91,15 @@ namespace Blazorise.Components
             {
                 var item = FilteredData.ElementAtOrDefault( activeItemIndex );
 
+                ShowDropdownOnFocus = false;
+
                 if ( item != null )
                     await HandleDropdownItemClicked( ValueField.Invoke( item ) );
             }
             else if ( e.Code == "Escape" )
             {
+                ShowDropdownOnFocus = false;
+
                 await Clear();
             }
             else if ( e.Code == "ArrowUp" )
@@ -104,8 +112,25 @@ namespace Blazorise.Components
             }
         }
 
+        protected Task HandleTextFocusIn()
+        {
+            if ( string.IsNullOrEmpty( CurrentSearch ) && !ShowDropdownOnFocus )
+            {
+                ShowDropdownOnFocus = true;
+                dropdownRef?.Show();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        protected Task HandleTextFocusOut()
+        {
+            return Task.Delay( 150 ).ContinueWith( _ => ShowDropdownOnFocus = false );
+        }
+
         private async Task HandleDropdownItemClicked( object value )
         {
+            ShowDropdownOnFocus = false;
             CurrentSearch = null;
             dropdownRef.Hide();
 
@@ -138,14 +163,14 @@ namespace Blazorise.Components
             {
                 query = from q in query
                         let text = TextField.Invoke( q )
-                        where text.IndexOf( CurrentSearch, 0, StringComparison.CurrentCultureIgnoreCase ) >= 0
+                        where text.IndexOf( CurrentSearch ?? string.Empty, 0, StringComparison.CurrentCultureIgnoreCase ) >= 0
                         select q;
             }
             else
             {
                 query = from q in query
                         let text = TextField.Invoke( q )
-                        where text.StartsWith( CurrentSearch, StringComparison.OrdinalIgnoreCase )
+                        where text.StartsWith( CurrentSearch ?? string.Empty, StringComparison.OrdinalIgnoreCase )
                         select q;
             }
 
@@ -212,7 +237,10 @@ namespace Blazorise.Components
         /// <summary>
         /// True if the dropdown menu should be visible.
         /// </summary>
-        protected bool DropdownVisible => Data != null && TextField != null && CurrentSearch?.Length >= MinLength;
+        protected bool DropdownVisible
+            => Data != null && TextField != null && ( CurrentSearch?.Length >= MinLength || ShowDropdownOnFocus );
+
+        private bool ShowDropdownOnFocus = false;
 
         /// <summary>
         /// Gets the custom classnames for dropdown element.

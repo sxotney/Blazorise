@@ -23,6 +23,7 @@ namespace Blazorise
         {
             builder.Append( ClassProvider.ModalContent( Dialog ) );
             builder.Append( ClassProvider.ModalContentSize( Size ), Size != ModalSize.Default );
+            builder.Append( ClassProvider.ModalContentCentered( Centered );
 
             base.BuildClasses( builder );
         }
